@@ -1,0 +1,74 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="Main.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Util.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Audio.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Util.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="stb_image.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="GuitarString.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="res\hat.png">
+      <Filter>Resources</Filter>
+    </Image>
+    <Image Include="res\cursor.png">
+      <Filter>Resources</Filter>
+    </Image>
+    <Image Include="res\cursorpress.png">
+      <Filter>Resources</Filter>
+    </Image>
+    <Image Include="res\fourlegs.png">
+      <Filter>Resources</Filter>
+    </Image>
+    <Image Include="res\grass.png">
+      <Filter>Resources</Filter>
+    </Image>
+    <Image Include="res\twolegs.png">
+      <Filter>Resources</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+    <None Include="rect.vert">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="rect.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="string.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="string.vert">
+      <Filter>Shaders</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Resources">
+      <UniqueIdentifier>{d5fc283e-66b2-4c73-bcf1-cfccc786d88b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source">
+      <UniqueIdentifier>{f5d84512-d76c-4284-bbde-0f58bae017bb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Headers">
+      <UniqueIdentifier>{f60e1714-8cdd-4908-a960-dfd6bdb584ec}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders">
+      <UniqueIdentifier>{17d95dc0-d14d-485f-b207-d7368ec25f8a}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
