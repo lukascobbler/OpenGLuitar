@@ -139,6 +139,7 @@
     <ClCompile Include="Util.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Audio.h" />
     <ClInclude Include="GuitarString.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="Util.h" />

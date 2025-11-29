@@ -8,6 +8,7 @@
 #include <vector>
 #include "Util.h"
 #include "GuitarString.h"
+#include "Audio.h"
 
 #define NOMINMAX
 #include <windows.h>
@@ -25,10 +26,14 @@ int endProgram(std::string message) {
 
 unsigned guitarTexture;
 unsigned cursorNotPressedTexture;
+unsigned signatureTexture;
 
+std::vector<GuitarString> strings;
+
+boolean isPressed;
 GLFWcursor* cursorReleased;
 GLFWcursor* cursorPressed;
-boolean isPressed = false;
+
 double mouseX = 0.0, mouseY = 0.0;
 
 double lastTimeForRefresh;
@@ -49,32 +54,7 @@ void preprocessTexture(unsigned& texture, const char* filepath) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 }
 
-void formGuitarVAO(float* verticesRect, size_t rectSize, unsigned int& VAOrect) {
-    // formiranje VAO-ova je izdvojeno u posebnu funkciju radi čitljivijeg koda u main funkciji
-
-    // Podsetnik za atribute:
-/*
-    Jedan VAO se vezuje za jedan deo celokupnog skupa verteksa na sceni.
-    Na primer, dobra praksa je da se jedan VAO vezuje za jedan VBO koji se vezuje za jedan objekat, odnosno niz temena koja opisuju objekat.
-
-    VAO je pomoćna struktura koja opisuje kako se podaci u nizu objekta interpretiraju.
-    U render-petlji, za crtanje određenog objekta, naredbom glBindVertexArray(nekiVAO) se određuje koji se objekat crta.
-
-    Potrebno je definisati koje atribute svako teme u nizu sadrži, npr. pozicija na lokaciji 0 i boja na lokaciji 1.
-
-    Ova konfiguracija je specifična za naš primer na vežbama i može se menjati za različite potrebe u projektu.
-
-
-    Atribut se opisuje metodom glVertexAttribPointer(). Argumenti su redom:
-        index - identifikacioni kod atributa, u verteks šejderu je povezan preko svojstva location (location = 0 u šejderu -> indeks tog atributa treba staviti isto 0 u ovoj naredbi)
-        size - broj vrednosti unutar atributa (npr. za poziciju su x i y, odnosno 2 vrednosti; za boju r, g i b, odnosno 3 vrednosti)
-        type - tip vrednosti
-        normalized - da li je potrebno mapirati na odgovarajući opseg (mi poziciju već inicijalizujemo na opseg (-1, 1), a boju (0, 1), tako da nam nije potrebno)
-        stride - koliko elemenata u nizu treba preskočiti da bi se došlo od datog atributa u jednom verteksu do istog tog atributa u sledećem verteksu
-        pointer - koliko elemenata u nizu treba preskočiti od početka niza da bi se došlo do prvog pojavljivanja datog atributa
-*/
-// Četvorougao
-
+void formRectVAO(float* verticesRect, size_t rectSize, unsigned int& VAOrect) {
     unsigned int VBOrect;
     glGenVertexArrays(1, &VAOrect);
     glGenBuffers(1, &VBOrect);
@@ -92,23 +72,36 @@ void formGuitarVAO(float* verticesRect, size_t rectSize, unsigned int& VAOrect) 
     glEnableVertexAttribArray(1);
 }
 
-void limitFPS() {
-    while (glfwGetTime() < lastTimeForRefresh + 1.0 / FPS) {}
-    lastTimeForRefresh += 1.0 / FPS;
+void limitFPS()
+{
+    double now = glfwGetTime();
+    double targetFrameTime = 1.0 / FPS;
+    double remaining = (lastTimeForRefresh + targetFrameTime) - now;
+
+    if (remaining > 0.0)
+    {
+        glfwWaitEventsTimeout(remaining);
+    }
+    else
+    {
+        glfwPollEvents();
+    }
+
+    lastTimeForRefresh = glfwGetTime();
 }
 
-void drawRect(unsigned int rectShader, unsigned int VAOrect) {
+void drawRect(unsigned int rectShader, unsigned int VAOrect, unsigned int texture) {
     glUseProgram(rectShader);
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, guitarTexture);
+    glBindTexture(GL_TEXTURE_2D, texture);
 
     glBindVertexArray(VAOrect); // Podešavanje da se crta koristeći vertekse četvorougla
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4); // Crtaju se trouglovi tako da formiraju četvorougao
 }
 
 void drawLines(unsigned int stringShader, unsigned int VAO, 
-    unsigned int vertexCount, int windowWidth, int windowHeight, std::vector<Line2D>& lines)
+    unsigned int vertexCount, int windowWidth, int windowHeight)
 {
     float time = (float)glfwGetTime();
     float mouseXNDC = (float)(mouseX / windowWidth) * 2.0f - 1.0f;
@@ -116,40 +109,42 @@ void drawLines(unsigned int stringShader, unsigned int VAO,
 
     std::vector<float> amplitudes;
 
-    for (auto& line : lines)
+    for (auto& string : strings)
     {
         bool trigger = false;
 
-        if (isPressed)
+        if (isPressed && !string.hasBeenTriggered)
         {
-            float distUp = pointLineDistance(mouseXNDC, mouseYNDC, line.x0, line.y0, line.x1, line.y1);
-            if (distUp < line.thickness * 2.5f)
+            float distUp = pointLineDistance(mouseXNDC, mouseYNDC, string.x0, string.y0, string.x1, string.y1);
+            if (distUp < string.thickness * 2.5f) {
                 trigger = true;
-
+                string.hasBeenTriggered = true;
+            }
         }
 
         if (trigger)
         {
-            line.isVibrating = true;
-            line.vibrationTime = 0.0f;
+            AudioEngine::playNote(string.name, 0, 1);
+            string.isVibrating = true;
+            string.vibrationTime = 0.0f;
         }
 
-        if (line.isVibrating)
+        if (string.isVibrating)
         {
-            line.vibrationTime += 0.016f;
-            line.currentAmplitude = MAXIMUM_AMPLITUDE * (1.0f / (1.0f + DECAY_RATE * line.vibrationTime));
-            if (line.currentAmplitude < 0.001f)
+            string.vibrationTime += 0.016f;
+            string.currentAmplitude = MAXIMUM_AMPLITUDE * (1.0f / (1.0f + DECAY_RATE * string.vibrationTime));
+            if (string.currentAmplitude < 0.001f)
             {
-                line.isVibrating = false;
-                line.currentAmplitude = 0.0f;
+                string.isVibrating = false;
+                string.currentAmplitude = 0.0f;
             }
         }
         else
         {
-            line.currentAmplitude = 0.0f;
+            string.currentAmplitude = 0.0f;
         }
 
-        amplitudes.push_back(line.currentAmplitude);
+        amplitudes.push_back(string.currentAmplitude);
     }
 
     glUseProgram(stringShader);
@@ -179,9 +174,14 @@ void mouse_callback(GLFWwindow* window, int button, int action, int mods) {
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
         glfwSetCursor(window, cursorPressed);
         isPressed = true;
+
     } else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
         glfwSetCursor(window, cursorReleased);
+
         isPressed = false;
+        for (auto& string : strings) {
+            string.hasBeenTriggered = false;
+        }
     }
 }
 
@@ -217,11 +217,12 @@ int main()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // cursor
-    cursorReleased = loadImageToCursor("res/cursor.png");
-    cursorPressed = loadImageToCursor("res/cursor_pressed.png");
+    cursorReleased = loadImageToCursor("res/textures/cursor.png");
+    cursorPressed = loadImageToCursor("res/textures/cursor_pressed.png");
     glfwSetCursor(window, cursorReleased);
     
-    preprocessTexture(guitarTexture, "res/guitar_no_strings.png");
+    preprocessTexture(guitarTexture, "res/textures/guitar_no_strings.png");
+    preprocessTexture(signatureTexture, "res/textures/signature.png");
 
     // shaders
     unsigned int rectShader = createShader("rect.vert", "rect.frag");
@@ -230,29 +231,41 @@ int main()
 
     unsigned int stringShader = createShader("string.vert", "string.frag");
 
+    // audio
+    AudioEngine::init();
+
     float verticesGuitar[] = {
-         -0.94, 0.6191, 0.0f, 1.0f,// top left
-         -0.94, -0.6191, 0.0f,  0.0f, // bottom left 
-         0.94, -0.6191, 1.0f, 0.0f, // top right
-         0.94, 0.6191, 1.0f, 1.0f, // bottom right 
+         -0.94, 0.6191, 0.0f, 1.0f,
+         -0.94, -0.6191, 0.0f, 0.0f,
+         0.94, -0.6191, 1.0f, 0.0f,
+         0.94, 0.6191, 1.0f, 1.0f
     };
 
-    std::vector<Line2D> lines = {
-        { -0.5800f,  0.0880f,  0.6600f,  0.0880f,  0.007f, 0.992f, 0.851f, 0.435f },
-        { -0.5800f,  0.0615f,  0.6600f,  0.0615f,  0.006f, 0.992f, 0.851f, 0.435f },
-        { -0.5800f,  0.0330f,  0.6600f,  0.0330f,  0.005f, 0.992f, 0.851f, 0.435f },
-        { -0.5800f,  0.0040f,  0.6600f,  0.0040f,  0.004f, 0.992f, 0.851f, 0.435f },
-        { -0.5800f, -0.0260f,  0.6600f, -0.0260f,  0.004f, 0.698f, 0.698f, 0.698f },
-        { -0.5800f, -0.0550f,  0.6600f, -0.0550f,  0.004f, 0.698f, 0.698f, 0.698f }
+    float verticesSignature[] = {
+        0.619167f, 0.94, 0.0, 1.0,
+        0.619167f, 0.731436, 0.0, 0.0,
+        0.94f, 0.731436, 1.0, 0.0,
+        0.94f, 0.94, 1.0, 1.0
+    };
+
+    strings = {
+        { -0.5800f,  0.0880f,  0.6600f,  0.0880f,  0.007f, 0.992f, 0.851f, 0.435f, "E"  },
+        { -0.5800f,  0.0615f,  0.6600f,  0.0615f,  0.006f, 0.992f, 0.851f, 0.435f, "A"  },
+        { -0.5800f,  0.0330f,  0.6600f,  0.0330f,  0.005f, 0.992f, 0.851f, 0.435f, "D"  },
+        { -0.5800f,  0.0040f,  0.6600f,  0.0040f,  0.004f, 0.992f, 0.851f, 0.435f, "G"  },
+        { -0.5800f, -0.0260f,  0.6600f, -0.0260f,  0.004f, 0.698f, 0.698f, 0.698f, "B"  },
+        { -0.5800f, -0.0550f,  0.6600f, -0.0550f,  0.004f, 0.698f, 0.698f, 0.698f, "Eh" }
     };
 
     unsigned int VAOguitar;
-    formGuitarVAO(verticesGuitar, sizeof(verticesGuitar), VAOguitar);
+    unsigned int VAOsignature;
+    formRectVAO(verticesGuitar, sizeof(verticesGuitar), VAOguitar);
+    formRectVAO(verticesSignature, sizeof(verticesSignature), VAOsignature);
 
     unsigned int VAOstrings;
     unsigned int vertexCount;
 
-    formLinesVAO(lines, VAOstrings, vertexCount);
+    formStringsVAO(strings, VAOstrings, vertexCount);
 
     glClearColor(0.5f, 0.6f, 1.0f, 1.0f);
 
@@ -261,24 +274,24 @@ int main()
 
     while (!glfwWindowShouldClose(window))
     {
-        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-            
-        }
-
         glClear(GL_COLOR_BUFFER_BIT);
 
-        drawRect(rectShader, VAOguitar);
+        drawRect(rectShader, VAOguitar, guitarTexture);
+        drawRect(rectShader, VAOsignature, signatureTexture);
 
-        drawLines(stringShader, VAOstrings, vertexCount, width, height, lines);
+        drawLines(stringShader, VAOstrings, vertexCount, width, height);
 
         glfwSwapBuffers(window);
-        glfwPollEvents();
 
-        limitFPS();
+        AudioEngine::collectGarbage();
+
+        limitFPS(); // todo mouse position detection problem with fps limiting 
+                    // to 75 with busy waiting
     }
 
     glDeleteProgram(rectShader);
     glfwDestroyWindow(window);
+    AudioEngine::shutdown();
     glfwTerminate();
     return 0;
 }

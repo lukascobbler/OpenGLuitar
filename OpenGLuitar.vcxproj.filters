@@ -21,6 +21,9 @@
     <ClInclude Include="GuitarString.h">
       <Filter>Headers</Filter>
     </ClInclude>
+    <ClInclude Include="Audio.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\hat.png">
