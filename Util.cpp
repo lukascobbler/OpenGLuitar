@@ -8,12 +8,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-// Autor: Nedeljko Tesanovic
-// Opis: pomocne funkcije za ucitavanje sejdera i tekstura
 unsigned int compileShader(GLenum type, const char* source)
 {
-    //Uzima kod u fajlu na putanji "source", kompajlira ga i vraca sejder tipa "type"
-    //Citanje izvornog koda iz fajla
     std::string content = "";
     std::ifstream file(source);
     std::stringstream ss;
@@ -21,35 +17,36 @@ unsigned int compileShader(GLenum type, const char* source)
     {
         ss << file.rdbuf();
         file.close();
-        std::cout << "Uspjesno procitao fajl sa putanje \"" << source << "\"!" << std::endl;
+        std::cout << "Successfully loaded textures \"" << source << "\"!" << std::endl;
     }
     else {
         ss << "";
-        std::cout << "Greska pri citanju fajla sa putanje \"" << source << "\"!" << std::endl;
+        std::cout << "Texture loading failed \"" << source << "\"!" << std::endl;
     }
     std::string temp = ss.str();
-    const char* sourceCode = temp.c_str(); //Izvorni kod sejdera koji citamo iz fajla na putanji "source"
+    const char* sourceCode = temp.c_str(); 
 
-    int shader = glCreateShader(type); //Napravimo prazan sejder odredjenog tipa (vertex ili fragment)
+    int shader = glCreateShader(type); 
 
-    int success; //Da li je kompajliranje bilo uspjesno (1 - da)
-    char infoLog[512]; //Poruka o gresci (Objasnjava sta je puklo unutar sejdera)
-    glShaderSource(shader, 1, &sourceCode, NULL); //Postavi izvorni kod sejdera
-    glCompileShader(shader); //Kompajliraj sejder
+    int success;
+    char infoLog[512]; 
+    glShaderSource(shader, 1, &sourceCode, NULL);
+    glCompileShader(shader);
 
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &success); //Provjeri da li je sejder uspjesno kompajliran
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &success); 
     if (success == GL_FALSE)
     {
-        glGetShaderInfoLog(shader, 512, NULL, infoLog); //Pribavi poruku o gresci
+        glGetShaderInfoLog(shader, 512, NULL, infoLog);
         if (type == GL_VERTEX_SHADER)
             printf("VERTEX");
         else if (type == GL_FRAGMENT_SHADER)
             printf("FRAGMENT");
-        printf(" sejder ima gresku! Greska: \n");
+        printf(" shader error: \n");
         printf(infoLog);
     }
     return shader;
 }
+
 unsigned int createShader(const char* vsSource, const char* fsSource)
 {
     //Pravi objedinjeni sejder program koji se sastoji od Vertex sejdera ciji je kod na putanji vsSource
@@ -96,10 +93,8 @@ unsigned loadImageToTexture(const char* filePath) {
     unsigned char* ImageData = stbi_load(filePath, &TextureWidth, &TextureHeight, &TextureChannels, 0);
     if (ImageData != NULL)
     {
-        //Slike se osnovno ucitavaju naopako pa se moraju ispraviti da budu uspravne
         stbi__vertical_flip(ImageData, TextureWidth, TextureHeight, TextureChannels);
 
-        // Provjerava koji je format boja ucitane slike
         GLint InternalFormat = -1;
         switch (TextureChannels) {
         case 1: InternalFormat = GL_RED; break;
@@ -114,13 +109,12 @@ unsigned loadImageToTexture(const char* filePath) {
         glBindTexture(GL_TEXTURE_2D, Texture);
         glTexImage2D(GL_TEXTURE_2D, 0, InternalFormat, TextureWidth, TextureHeight, 0, InternalFormat, GL_UNSIGNED_BYTE, ImageData);
         glBindTexture(GL_TEXTURE_2D, 0);
-        // oslobadjanje memorije zauzete sa stbi_load posto vise nije potrebna
         stbi_image_free(ImageData);
         return Texture;
     }
     else
     {
-        std::cout << "Textura nije ucitana! Putanja texture: " << filePath << std::endl;
+        std::cout << "Texture not loaded: " << filePath << std::endl;
         stbi_image_free(ImageData);
         return 0;
     }
@@ -158,4 +152,31 @@ GLFWwindow* createFullScreenWindow(const char* windowName) {
     GLFWwindow* window = glfwCreateWindow(mode->width, mode->height, windowName, monitor, NULL);
 
     return window;
+}
+
+void preprocessTexture(unsigned& texture, const char* filepath) {
+    texture = loadImageToTexture(filepath);
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+}
+
+float pointLineDistance(float px, float py, float x0, float y0, float x1, float y1)
+{
+    // calculating the distance from a line using the normalized projection factor formula
+    float dx = x1 - x0; float dy = y1 - y0;
+    float lenSq = dx * dx + dy * dy;
+    float t = ((px - x0) * dx + (py - y0) * dy) / lenSq;
+    t = std::fmax(0.0f, std::fmin(1.0f, t));
+    float projX = x0 + t * dx;
+    float projY = y0 + t * dy;
+    dx = px - projX;
+    dy = py - projY;
+    return std::sqrt(dx * dx + dy * dy);
 }

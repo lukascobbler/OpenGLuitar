@@ -2,10 +2,9 @@
 #include <GLFW/glfw3.h>
 
 #define _USE_MATH_DEFINES
-#include <cmath>
-#include <algorithm>
 #include <iostream>
 #include <vector>
+
 #include "Util.h"
 #include "GuitarString.h"
 #include "Audio.h"
@@ -15,8 +14,8 @@
 
 #define FPS 75
 
-#define MAXIMUM_AMPLITUDE 0.005f
-#define DECAY_RATE 2.0f
+#define MAXIMUM_AMPLITUDE 0.008f
+#define DECAY_RATE 2.1f
 
 int endProgram(std::string message) {
     std::cout << message << std::endl;
@@ -24,35 +23,22 @@ int endProgram(std::string message) {
     return -1;
 }
 
+// textures
 unsigned guitarTexture;
 unsigned cursorNotPressedTexture;
 unsigned signatureTexture;
 
+// strings as a global variable
 std::vector<GuitarString> strings;
 
+// mouse related stuff
 boolean isPressed;
 GLFWcursor* cursorReleased;
 GLFWcursor* cursorPressed;
-
 double mouseX = 0.0, mouseY = 0.0;
 
+// frame limiting
 double lastTimeForRefresh;
-
-void preprocessTexture(unsigned& texture, const char* filepath) {
-    texture = loadImageToTexture(filepath); // Učitavanje teksture
-    glBindTexture(GL_TEXTURE_2D, texture); // Vezujemo se za teksturu kako bismo je podesili
-
-    // Generisanje mipmapa - predefinisani različiti formati za lakše skaliranje po potrebi (npr. da postoji 32 x 32 verzija slike, ali i 16 x 16, 256 x 256...)
-    glGenerateMipmap(GL_TEXTURE_2D);
-
-    // Podešavanje strategija za wrap-ovanje - šta da radi kada se dimenzije teksture i poligona ne poklapaju
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); // S - tekseli po x-osi
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT); // T - tekseli po y-osi
-
-    // Podešavanje algoritma za smanjivanje i povećavanje rezolucije: nearest - bira najbliži piksel, linear - usrednjava okolne piksele
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-}
 
 void formRectVAO(float* verticesRect, size_t rectSize, unsigned int& VAOrect) {
     unsigned int VBOrect;
@@ -63,13 +49,53 @@ void formRectVAO(float* verticesRect, size_t rectSize, unsigned int& VAOrect) {
     glBindBuffer(GL_ARRAY_BUFFER, VBOrect);
     glBufferData(GL_ARRAY_BUFFER, rectSize, verticesRect, GL_STATIC_DRAW);
 
-    // Atribut 0 (pozicija):
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
-    // Atribut 1 (tekstura):
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
     glEnableVertexAttribArray(1);
+}
+
+void formStringsVAO(const std::vector<GuitarString>& strings, unsigned int& VAO, unsigned int& vertexCount)
+{
+    std::vector<float> vertices;
+
+    for (const auto& string : strings)
+    {
+        float dx = string.x1 - string.x0; float dy = string.y1 - string.y0;
+        float len = std::sqrt(dx * dx + dy * dy);
+        if (len == 0) continue;
+        float px = -dy / len; float py = dx / len;
+        float hx = px * string.thickness * 0.5f; float hy = py * string.thickness * 0.5f;
+
+        float rectVertices[30] = {
+            string.x0 - hx, string.y0 - hy, string.r, string.g, string.b,
+            string.x1 - hx, string.y1 - hy, string.r, string.g, string.b,
+            string.x1 + hx, string.y1 + hy, string.r, string.g, string.b,
+            string.x0 - hx, string.y0 - hy, string.r, string.g, string.b,
+            string.x1 + hx, string.y1 + hy, string.r, string.g, string.b,
+            string.x0 + hx, string.y0 + hy, string.r, string.g, string.b
+        };
+        vertices.insert(vertices.end(), rectVertices, rectVertices + 30);
+    }
+
+    vertexCount = vertices.size() / 5;
+
+    unsigned int VBO;
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
+
+    glBindVertexArray(VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+
+    glBindVertexArray(0);
 }
 
 void limitFPS()
@@ -96,11 +122,11 @@ void drawRect(unsigned int rectShader, unsigned int VAOrect, unsigned int textur
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture);
 
-    glBindVertexArray(VAOrect); // Podešavanje da se crta koristeći vertekse četvorougla
-    glDrawArrays(GL_TRIANGLE_FAN, 0, 4); // Crtaju se trouglovi tako da formiraju četvorougao
+    glBindVertexArray(VAOrect);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 }
 
-void drawLines(unsigned int stringShader, unsigned int VAO, 
+void drawStrings(unsigned int stringShader, unsigned int VAO, 
     unsigned int vertexCount, int windowWidth, int windowHeight)
 {
     float time = (float)glfwGetTime();
@@ -279,7 +305,7 @@ int main()
         drawRect(rectShader, VAOguitar, guitarTexture);
         drawRect(rectShader, VAOsignature, signatureTexture);
 
-        drawLines(stringShader, VAOstrings, vertexCount, width, height);
+        drawStrings(stringShader, VAOstrings, vertexCount, width, height);
 
         glfwSwapBuffers(window);
 

@@ -26,26 +26,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="res\hat.png">
-      <Filter>Resources</Filter>
-    </Image>
-    <Image Include="res\cursor.png">
-      <Filter>Resources</Filter>
-    </Image>
-    <Image Include="res\cursorpress.png">
-      <Filter>Resources</Filter>
-    </Image>
-    <Image Include="res\fourlegs.png">
-      <Filter>Resources</Filter>
-    </Image>
-    <Image Include="res\grass.png">
-      <Filter>Resources</Filter>
-    </Image>
-    <Image Include="res\twolegs.png">
-      <Filter>Resources</Filter>
-    </Image>
-  </ItemGroup>
-  <ItemGroup>
     <None Include="packages.config" />
     <None Include="rect.vert">
       <Filter>Shaders</Filter>
@@ -73,5 +53,19 @@
     <Filter Include="Shaders">
       <UniqueIdentifier>{17d95dc0-d14d-485f-b207-d7368ec25f8a}</UniqueIdentifier>
     </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="res\textures\cursor.png">
+      <Filter>Resources</Filter>
+    </Image>
+    <Image Include="res\textures\cursor_pressed.png">
+      <Filter>Resources</Filter>
+    </Image>
+    <Image Include="res\textures\guitar_no_strings.png">
+      <Filter>Resources</Filter>
+    </Image>
+    <Image Include="res\textures\signature.png">
+      <Filter>Resources</Filter>
+    </Image>
   </ItemGroup>
 </Project>

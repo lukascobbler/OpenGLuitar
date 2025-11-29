@@ -84,7 +84,7 @@ void AudioEngine::shutdown()
 
 void AudioEngine::playNote(std::string stringName, int fretIndex, float volume)
 {
-    int stringIndex;
+    int stringIndex = -1;
 
     if (stringName == "E") stringIndex = 0;
     else if (stringName == "A") stringIndex = 1;
@@ -92,6 +92,7 @@ void AudioEngine::playNote(std::string stringName, int fretIndex, float volume)
     else if (stringName == "G") stringIndex = 3;
     else if (stringName == "B") stringIndex = 4;
     else if (stringName == "Eh") stringIndex = 5;
+    else return;
 
     if (stringIndex < 0 || stringIndex >= STRINGS ||
         fretIndex < 0 || fretIndex >= FRETS)

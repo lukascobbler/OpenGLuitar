@@ -145,12 +145,10 @@
     <ClInclude Include="Util.h" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="res\cursor.png" />
-    <Image Include="res\cursorpress.png" />
-    <Image Include="res\fourlegs.png" />
-    <Image Include="res\grass.png" />
-    <Image Include="res\hat.png" />
-    <Image Include="res\twolegs.png" />
+    <Image Include="res\textures\cursor.png" />
+    <Image Include="res\textures\cursor_pressed.png" />
+    <Image Include="res\textures\guitar_no_strings.png" />
+    <Image Include="res\textures\signature.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
