@@ -10,6 +10,9 @@
     <ClCompile Include="Audio.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="GuitarString.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Util.h">
@@ -37,6 +40,12 @@
       <Filter>Shaders</Filter>
     </None>
     <None Include="string.vert">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="circle.vert">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="circle.frag">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>

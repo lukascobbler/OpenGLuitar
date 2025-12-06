@@ -4,9 +4,11 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <vector>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+#include "GuitarString.h"
 
 unsigned int compileShader(GLenum type, const char* source)
 {
@@ -179,4 +181,45 @@ float pointLineDistance(float px, float py, float x0, float y0, float x1, float 
     dx = px - projX;
     dy = py - projY;
     return std::sqrt(dx * dx + dy * dy);
+}
+
+void findClosestStringAndFret(float mouseXNDC, float mouseYNDC, const std::vector<GuitarString>& strings,
+    int& outStringIndex, int& outFretIndex, float& outDistUp)
+{
+    outStringIndex = -1;
+    outFretIndex = -1;
+    outDistUp = -1;
+
+    float minDist = 99999.0f;
+    for (size_t i = 0; i < strings.size(); i++)
+    {
+        const auto& s = strings[i];
+        float dist = pointLineDistance(mouseXNDC, mouseYNDC, s.x0, s.y0, s.x1, s.y1);
+        if (dist < minDist)
+        {
+            minDist = dist;
+            outStringIndex = (int)i;
+        }
+    }
+
+    outDistUp = minDist;
+
+    const auto& closestString = strings[outStringIndex];
+
+    float minFretDist = 99999.0f;
+    int closestFret = -1;
+
+    for (size_t f = 0; f < closestString.fretMiddles.size(); f++)
+    {
+        float dx = mouseXNDC - closestString.fretMiddles[f][1];
+        float dy = mouseYNDC - closestString.fretMiddles[f][2];
+        float d = std::sqrt(dx * dx + dy * dy);
+        if (d < minFretDist)
+        {
+            minFretDist = d;
+            closestFret = (int)f;
+        }
+    }
+
+    outFretIndex = closestFret;
 }

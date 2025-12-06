@@ -127,6 +127,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <None Include="circle.frag" />
+    <None Include="circle.vert" />
     <None Include="rect.frag" />
     <None Include="rect.vert" />
     <None Include="packages.config" />
@@ -135,6 +137,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Audio.cpp" />
+    <ClCompile Include="GuitarString.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Util.cpp" />
   </ItemGroup>

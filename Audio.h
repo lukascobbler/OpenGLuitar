@@ -12,6 +12,7 @@ public:
 
     static void collectGarbage();
     static void playNote(std::string stringName, int fretIndex, float volume = 1.0f);
+    static void stopAllNotes();
 
 private:
     struct Sound {

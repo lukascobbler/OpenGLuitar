@@ -133,3 +133,11 @@ void AudioEngine::collectGarbage()
         }
     }
 }
+
+void AudioEngine::stopAllNotes() {
+    for (size_t i = 0; i < activeVoices.size(); i++)
+    {
+        activeVoices[i].voice->DestroyVoice();
+        activeVoices.erase(activeVoices.begin() + i);
+    }
+}
