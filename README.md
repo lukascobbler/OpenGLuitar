@@ -13,4 +13,4 @@ MIT.
 
 ## Preview
 
-![App preview](https://raw.githubusercontent.com/lukascobbler/OpenGLuitar/refs/heads/master/res/textures/guitar_no_strings.png "App preview")
+![App preview](https://raw.githubusercontent.com/lukascobbler/OpenGLuitar/refs/heads/master/preview.png "App preview")
