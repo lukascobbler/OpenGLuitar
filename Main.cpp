@@ -219,11 +219,13 @@ void drawStrings(unsigned int stringShader, unsigned int stringsVAO, unsigned in
         bool trigger = false;
         float t = 1.0f;
 
-        if (isPressedLeft && !string.hasBeenTriggered) {
+        if (isPressedLeft) {
             float distUp = pointLineDistance(mouseXNDC, mouseYNDC, string.x0, string.y0, string.x1, string.y1);
             if (distUp < string.thickness * 2.5f && string.fretPressed != -1) {
-                trigger = true;
+                trigger = !string.hasBeenTriggered;
                 string.hasBeenTriggered = true;
+            } else {
+                string.hasBeenTriggered = false;
             }
         }
 
